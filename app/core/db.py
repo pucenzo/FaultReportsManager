@@ -1,5 +1,9 @@
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.config import settings
+
+"""classe base da cui erediteranno tutti i modelli"""
+Base = declarative_base()
 
 engine = create_async_engine(settings.DATABASE_URL,connect_args={"check_same_thread": False})   
 
