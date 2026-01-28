@@ -9,14 +9,13 @@ class Priorita(str, Enum):
     MEDIA = "Media"
     ALTA = "Alta"
 
-
 class Segnalazione(Base):
     __tablename__ = "segnalazione"
 
     id = Column(Integer, primary_key=True, index=True)
     titolo = Column(String, nullable = False)
     descrizione = Column(Text, nullable = False)
-    priorita = Column(SQLAlchemyEnum(Priorita), nullable = False)
+    priorita = Column(SQLAlchemyEnum(Priorita), nullable = False, default = Priorita.BASSA)
     data_apertura = Column(DateTime, default=lambda:datetime.now(timezone.utc))
 
     id_cliente = Column(Integer, ForeignKey("cliente.id"))
@@ -24,6 +23,7 @@ class Segnalazione(Base):
 
     cliente = relationship("Cliente", back_populates = "segnalazioni")
     stato = relationship("StatoSegnalazione", back_populates = "segnalazioni")
+    logs = relationship("LogStatoSegnalazione", back_populates="segnalazione")
 
 
 class Cliente(Base):
@@ -45,6 +45,7 @@ class LogStatoSegnalazione(Base):
     data_modifica = Column(DateTime, nullable=False, default= lambda:datetime.now(timezone.utc))
     id_segnalazione = Column(Integer, ForeignKey("segnalazione.id"))
 
+    segnalazione = relationship("Segnalazione", back_populates="logs")
 
 class StatoSegnalazione(Base):
     __tablename__ = "stato_segnalazione"
