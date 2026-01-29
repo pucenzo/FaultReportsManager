@@ -1,5 +1,5 @@
 from app.core.db import Base
-from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from enum import Enum
@@ -10,7 +10,7 @@ class Priorita(str, Enum):
     ALTA = "Alta"
 
 class Segnalazione(Base):
-    __tablename__ = "segnalazione"
+    __tablename__ = "segnalazioni"
 
     id = Column(Integer, primary_key=True, index=True)
     titolo = Column(String, nullable = False)
@@ -18,8 +18,8 @@ class Segnalazione(Base):
     priorita = Column(SQLAlchemyEnum(Priorita), nullable = False, default = Priorita.BASSA)
     data_apertura = Column(DateTime, default=lambda:datetime.now(timezone.utc))
 
-    id_cliente = Column(Integer, ForeignKey("cliente.id"))
-    id_stato = Column(Integer, ForeignKey("stato_segnalazione.id"))
+    id_cliente = Column(Integer, ForeignKey("clienti.id"))
+    id_stato = Column(Integer, ForeignKey("stati_segnalazione.id"))
 
     cliente = relationship("Cliente", back_populates = "segnalazioni")
     stato = relationship("StatoSegnalazione", back_populates = "segnalazioni")
@@ -27,28 +27,38 @@ class Segnalazione(Base):
 
 
 class Cliente(Base):
-    __tablename__= 'cliente'
+    __tablename__= 'clienti'
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     cognome = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True, index=True)
+    hashed_pw = Column(String, nullable=False)
 
     segnalazioni = relationship("Segnalazione", back_populates = "cliente")
 
+class Operatore(Base):
+    __tablename__="operatori"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    cognome = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True, index=True)
+    hashed_pw = Column(String, nullable=False)
+
 class LogStatoSegnalazione(Base):
-    __tablename__ = "log_stato_segnalazione"
+    __tablename__ = "logs_stato_segnalazioni"
 
     id = Column(Integer, primary_key=True, index=True)
     vecchio_stato = Column(String, nullable=True)
     nuovo_stato = Column(String, nullable=False)
     data_modifica = Column(DateTime, nullable=False, default= lambda:datetime.now(timezone.utc))
-    id_segnalazione = Column(Integer, ForeignKey("segnalazione.id"))
+    id_segnalazione = Column(Integer, ForeignKey("segnalazioni.id"))
 
     segnalazione = relationship("Segnalazione", back_populates="logs")
 
 class StatoSegnalazione(Base):
-    __tablename__ = "stato_segnalazione"
+    __tablename__ = "stati_segnalazione"
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False, unique = True)
