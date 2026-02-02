@@ -21,7 +21,7 @@ async def get_stato_by_nome(
     
     query = select(StatoSegnalazione).where(StatoSegnalazione.nome == nome)
     result = await db.execute(query)
-    return result.scalar_one
+    return result.scalar_one_or_none()
 
 async def get_stati(
     db: AsyncSession

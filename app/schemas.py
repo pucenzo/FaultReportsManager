@@ -88,8 +88,6 @@ class LogStatoSegnalazioneResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-    ruolo: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-    is_operatore: bool = False
