@@ -16,11 +16,3 @@ SessionLocal = async_sessionmaker(
     autoflush=False, 
     bind=engine
 ) 
-
-async def get_db():
-    async with SessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
-    
