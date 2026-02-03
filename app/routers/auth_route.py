@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import timedelta
+from typing import Annotated
 
 from app.dependencies import get_db
 from app.schemas import ClienteResponse, ClienteCreate, Token
@@ -31,8 +32,8 @@ async def register_cliente(
 
 @router.post("/login", response_model=Token)
 async def login_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)]
 ):
 
     utente = await get_cliente_by_email(db, form_data.username)

@@ -1,9 +1,9 @@
 from passlib.context import CryptContext
-from app.core.config import settings
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
-from typing import Any
-from pydantic import BaseModel
+
+from app.core.config import settings
+from app.schemas import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -27,3 +27,15 @@ def create_access_token(soggetto: str, ruolo: str, id: int, expires_delta: timed
     ) 
     return encoded_jwt
 
+def decode_access_token(token: str) -> TokenData|None:
+    try:
+        payload = jwt.decode(
+            token, 
+            SECRET_KEY, 
+            algorithms=[ALGORITHM])
+        
+        token_data = TokenData(**payload)
+
+        return token_data
+    except JWTError:
+        return None
