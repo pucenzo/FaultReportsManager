@@ -3,15 +3,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import Optional
 
-from app.schemas import SegnalazioneCreate, SegnalazioneUpdatePriorita, SegnalazioneUpdateStato, SegnalazioneResponse
-from app.models import Segnalazione, StatoSegnalazione, LogStatoSegnalazione
+from app.schemas import LogStatoSegnalazioneResponse, SegnalazioneCreate, SegnalazioneUpdatePriorita, SegnalazioneUpdateStato
+from app.models import Segnalazione, StatoSegnalazione, LogStatoSegnalazione, Messaggio
 from app.models import Priorita
 
 async def create_segnalazione(
-    db: AsyncSession, 
+    db: AsyncSession,
     segnalazione_in: SegnalazioneCreate,
     id_cliente: int,
-    id_stato_iniziale: int
+    id_stato_iniziale: int,
+    autore: str
 ) -> Segnalazione:
     
     db_segnalazione = Segnalazione(
@@ -22,6 +23,17 @@ async def create_segnalazione(
     )
 
     db.add(db_segnalazione)
+    await db.flush()
+
+    primo_messaggio = Messaggio(
+        id_segnalazione = db_segnalazione.id,
+        contenuto = segnalazione_in.descrizione,
+        autore = autore, 
+        ruolo = "Cliente"
+    )
+
+    db.add(primo_messaggio)
+
     await db.commit()
     await db.refresh(db_segnalazione)
 
@@ -30,7 +42,8 @@ async def create_segnalazione(
         .where(Segnalazione.id == db_segnalazione.id)
         .options(
             selectinload(Segnalazione.cliente),
-            selectinload(Segnalazione.stato)
+            selectinload(Segnalazione.stato),
+            selectinload(Segnalazione.messaggi)
         )
     )
     result = await db.execute(query)
@@ -46,7 +59,7 @@ async def get_segnalazioni(
     query = (select(Segnalazione)
             .options(
                 selectinload(Segnalazione.cliente),
-                selectinload(Segnalazione.stato)
+                selectinload(Segnalazione.stato), 
             )
     )
 
@@ -61,6 +74,8 @@ async def get_segnalazioni(
 
 async def get_segnalazione_by_cliente(
     db: AsyncSession,
+    id_stato: int,
+    priorita: Priorita,
     id_cliente: int
 ) -> list[Segnalazione]|None:
     
@@ -68,9 +83,16 @@ async def get_segnalazione_by_cliente(
             .where(Segnalazione.id_cliente == id_cliente)
             .options(
                 selectinload(Segnalazione.cliente),
-                selectinload(Segnalazione.stato)
+                selectinload(Segnalazione.stato), 
             )
     )
+
+    if id_stato is not None:
+        query = query.where(Segnalazione.id_stato == id_stato)
+    
+    if priorita is not None:
+        query = query.where(Segnalazione.priorita == priorita)
+    
     result = await db.execute(query)
     return result.scalars().all()
     
@@ -83,7 +105,8 @@ async def get_segnalazione_by_id(
             .where(Segnalazione.id == id_segnalazione)
             .options(
                 selectinload(Segnalazione.cliente),
-                selectinload(Segnalazione.stato)
+                selectinload(Segnalazione.stato), 
+                selectinload(Segnalazione.messaggi)
             )
     )
     result = await db.execute(query)
@@ -92,14 +115,16 @@ async def get_segnalazione_by_id(
 async def update_stato_segnalazione(
     db: AsyncSession,
     id_segnalazione: int,
-    nuovo_stato: SegnalazioneUpdateStato
+    nuovo_stato: SegnalazioneUpdateStato,
+    operatore: str
 ) -> Segnalazione|None:
     
     query = (select(Segnalazione)
                 .where(Segnalazione.id == id_segnalazione)
                 .options(
                     selectinload(Segnalazione.cliente),
-                    selectinload(Segnalazione.stato)
+                    selectinload(Segnalazione.stato), 
+                    selectinload(Segnalazione.messaggi)
                 )
             )
     
@@ -111,7 +136,7 @@ async def update_stato_segnalazione(
     
     vecchio_stato = segnalazione_da_aggiornare.stato.nome
     
-    query_nuovo_stato = select(StatoSegnalazione).where(StatoSegnalazione.id == nuovo_stato.id_stato)
+    query_nuovo_stato = (select(StatoSegnalazione).where(StatoSegnalazione.id == nuovo_stato.id_stato))
     result_query_nuovo_stato = await db.execute(query_nuovo_stato)
     nuovo_stato_obj = result_query_nuovo_stato.scalar_one_or_none()
 
@@ -124,10 +149,20 @@ async def update_stato_segnalazione(
         db_log = LogStatoSegnalazione(
             vecchio_stato = vecchio_stato,
             nuovo_stato = nome_nuovo_stato,
-            id_segnalazione = id_segnalazione
+            id_segnalazione = id_segnalazione,
+            operatore = operatore
         )
 
         db.add(db_log)
+
+        messaggio_aggiornamento = Messaggio(
+            id_segnalazione = id_segnalazione,
+            contenuto = f"Lo stato è stato aggiornato da {vecchio_stato} a {nome_nuovo_stato}",
+            autore = operatore,
+            ruolo = "Operatore"
+        )
+
+        db.add(messaggio_aggiornamento)
 
     segnalazione_da_aggiornare.id_stato = nuovo_stato.id_stato
 
@@ -138,14 +173,16 @@ async def update_stato_segnalazione(
 async def update_priorita_segnalazione(
     db: AsyncSession, 
     id_segnalazione: int,
-    nuova_priorita: SegnalazioneUpdatePriorita
+    nuova_priorita: SegnalazioneUpdatePriorita,
+    operatore: str
 ) -> Segnalazione|None:
     
     query = (select(Segnalazione)
                 .where(Segnalazione.id == id_segnalazione)
                 .options(
                     selectinload(Segnalazione.cliente),
-                    selectinload(Segnalazione.stato)
+                    selectinload(Segnalazione.stato), 
+                    selectinload(Segnalazione.messaggi)
                 )        
             )
     
@@ -154,9 +191,50 @@ async def update_priorita_segnalazione(
 
     if segnalazione_da_aggiornare is None:
         return None
+    
+    vecchia_priorita = segnalazione_da_aggiornare.priorita
+
+    if vecchia_priorita != nuova_priorita.priorita:
+        messaggio_aggiornamento = Messaggio(
+            id_segnalazione = id_segnalazione,
+            contenuto = f"La priorità è stata aggiornata da {vecchia_priorita} a {nuova_priorita}",
+            autore = operatore,
+            ruolo = "Operatore"
+        )
+
+        db.add(messaggio_aggiornamento)
 
     segnalazione_da_aggiornare.priorita = nuova_priorita.priorita
 
     await db.commit()
     await db.refresh(segnalazione_da_aggiornare)
     return segnalazione_da_aggiornare
+
+async def create_messaggio(
+    db: AsyncSession, 
+    id_segnalazione: int,
+    contenuto: str,
+    autore: str, 
+    ruolo: str
+) -> Messaggio:
+    
+    nuovo_messaggio = Messaggio(
+        contenuto = contenuto, 
+        autore = autore,
+        ruolo = ruolo, 
+        id_segnalazione = id_segnalazione
+    )
+
+    db.add(nuovo_messaggio)
+    await db.commit()
+    await db.refresh(nuovo_messaggio)
+    return nuovo_messaggio
+
+async def get_logs_by_segnalazione(
+    db: AsyncSession,
+    id_segnalazione: int
+) -> list[LogStatoSegnalazione]:
+    
+    query = select(LogStatoSegnalazione).where(LogStatoSegnalazione.id_segnalazione == id_segnalazione)
+    result = await db.execute(query)
+    return result.scalars().all()    

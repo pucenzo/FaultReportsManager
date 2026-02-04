@@ -43,6 +43,24 @@ class StatoSegnalazioneResponse(BaseModel):
     id: int
     nome: str
     model_config=ConfigDict(from_attributes=True)
+    
+#===========================================================================
+#                            SCHEMI MESSAGGI
+#===========================================================================
+
+class MessaggioBase(BaseModel):
+    contenuto: str
+
+class MessaggioCreate(MessaggioBase):
+    pass
+
+class MessaggioResponse(MessaggioBase):
+    id: int
+    data_invio: datetime
+    autore: str
+    ruolo: str
+    id_segnalazione: int
+    model_config = ConfigDict(from_attributes=True)
 
 #===========================================================================
 #                               SCHEMI SEGNALAZIONE
@@ -50,18 +68,21 @@ class StatoSegnalazioneResponse(BaseModel):
 
 class SegnalazioneBase(BaseModel):
     titolo: str
-    descrizione: str
 
 class SegnalazioneCreate(SegnalazioneBase):
-    pass
+    descrizione: str
 
-class SegnalazioneResponse(SegnalazioneBase):
+class SegnalazioneMinimal(SegnalazioneBase):
     id: int
     priorita: Priorita
     data_apertura: datetime
-    cliente: ClienteResponse
     stato: StatoSegnalazioneResponse
+    cliente: ClienteResponse
     model_config=ConfigDict(from_attributes=True)
+
+class SegnalazioneDetail(SegnalazioneMinimal):
+    descrizione: str
+    messaggi: list[MessaggioResponse] = []
 
 class SegnalazioneUpdatePriorita(BaseModel):
     priorita: Priorita
@@ -79,6 +100,7 @@ class LogStatoSegnalazioneResponse(BaseModel):
     nuovo_stato: str
     data_modifica: datetime
     id_segnalazione: int
+    operatore: str
     model_config=ConfigDict(from_attributes=True)
 
 #===========================================================================

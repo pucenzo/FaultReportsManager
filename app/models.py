@@ -1,5 +1,5 @@
 from app.core.db import Base
-from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from enum import Enum
@@ -24,6 +24,7 @@ class Segnalazione(Base):
     cliente = relationship("Cliente", back_populates = "segnalazioni")
     stato = relationship("StatoSegnalazione", back_populates = "segnalazioni")
     logs = relationship("LogStatoSegnalazione", back_populates="segnalazione")
+    messaggi = relationship("Messaggio", back_populates = "segnalazione")
 
 
 class Cliente(Base):
@@ -53,7 +54,9 @@ class LogStatoSegnalazione(Base):
     vecchio_stato = Column(String, nullable=True)
     nuovo_stato = Column(String, nullable=False)
     data_modifica = Column(DateTime, nullable=False, default= lambda:datetime.now(timezone.utc))
+
     id_segnalazione = Column(Integer, ForeignKey("segnalazioni.id"))
+    id_operatore = Column(String)
 
     segnalazione = relationship("Segnalazione", back_populates="logs")
 
@@ -64,3 +67,16 @@ class StatoSegnalazione(Base):
     nome = Column(String, nullable=False, unique = True)
 
     segnalazioni=relationship("Segnalazione", back_populates = "stato")
+
+class Messaggio(Base):
+    __tablename__ = "messaggi"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contenuto = Column(Text, nullable=False)
+    data_invio = Column(DateTime, nullable=False, default = lambda: datetime.now(timezone.utc))
+    autore = Column(String, nullable=False)
+    ruolo = Column(String, nullable=False)
+
+    id_segnalazione = Column(Integer, ForeignKey("segnalazioni.id"))
+
+    segnalazione = relationship("Segnalazione", back_populates="messaggi")
