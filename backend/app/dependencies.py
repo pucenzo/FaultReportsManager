@@ -2,15 +2,16 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
-from jose import JWTError
-
 
 from app.core.db import SessionLocal
 from app.core.security import decode_access_token
 from app.crud.crud_cliente import get_cliente_by_email
 from app.crud.crud_operatore import get_operatore_by_email
 
-
+"""
+Iniezione della dipendenza per la gestione della sessione del db.
+Assicuriamo che la connessione venga chiusa alla fine di ogni richiesta.
+"""
 async def get_db():
     async with SessionLocal() as session:
         try:
@@ -20,6 +21,11 @@ async def get_db():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+"""
+Ricava le informazioni dell'utente dai dati del token. 
+Verifica la validità del token.
+Verifica la presenza dell'utente nel db
+"""
 async def get_current_user(
     db: Annotated[AsyncSession, Depends(get_db)],
     token: Annotated[str,Depends(oauth2_scheme)],

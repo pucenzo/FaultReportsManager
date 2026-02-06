@@ -13,6 +13,11 @@ from app.core.config import settings
 
 router = APIRouter()
 
+"""
+Endpoint per la registrazione di un nuovo cliente. 
+Utilizziamo lo schema ClienteCreate (pwd in chiaro) per la validazione dei dati in ingresso.
+Utilizziamo lo schema ClienteResponse per la validazione dei dati in output.
+"""
 @router.post("/register", response_model=ClienteResponse)
 async def register_cliente(
     cliente_in: ClienteCreate,
@@ -30,6 +35,10 @@ async def register_cliente(
 
     return nuovo_cliente
 
+"""
+Endpoint per il login dell'utente (cliente o operatore).
+Restituisce il token. Utilizziamo lo schema Token per la validazione dei dati in output.
+"""
 @router.post("/login", response_model=Token)
 async def login_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -61,5 +70,3 @@ async def login_access_token(
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
-
-        

@@ -2,6 +2,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import LogStatoSegnalazione
 
+"""
+Crea un nuovo log. 
+Gestisce la creazione del modello e la memorizzazione
+"""
 async def create_log(
     db: AsyncSession, 
     id_segnalazione: int,
@@ -20,7 +24,7 @@ async def create_log(
     await db.refresh(db_log)
     return db_log
 
-
+"""Recupera il log relativo ad una segnalazione, ordinandoli dal meno recente al più recente"""
 async def get_log_by_segnalazione(
     db: AsyncSession, 
     id_segnalazione: int

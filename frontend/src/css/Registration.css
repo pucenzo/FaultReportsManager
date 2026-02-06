@@ -1,0 +1,96 @@
+.registration-page {
+  background: #fff;
+  padding: 2rem 1.5rem;
+  margin: 0 auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  max-width: 410px;
+  text-align: center;
+}
+
+.registration-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.registration-page .form-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.input-wrapper{
+  height: 54px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.input-wrapper .input-field{
+  height: 100%;
+  width: 100%;
+  font-size: 1.06rem;
+  border-radius: 0.31rem;
+  border: 1px solid #ccc;
+  padding: 0 2rem 0rem;
+}
+
+.input-wrapper i{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.input-wrapper i:not(.eye-icon) {
+  left: 0.3rem;
+  pointer-events: none;
+}
+
+.input-wrapper i.eye-icon {
+  font-size: 1.25rem;
+  right: 0.9rem;
+  cursor: pointer;
+  display: none;
+}
+
+.input-wrapper .input-field:valid ~ i.eye-icon {
+  display: block;
+}
+
+.registration-page .registration-button {
+  width: 100%;
+  height: 54px;
+  font-size: 1.125rem;
+  font-weight: 500;
+  background: #f39200;
+  cursor: pointer;
+  margin-top: 2.19rem;
+  border-radius: 0.31rem;
+  border: none;
+  transition: 0.2s ease;
+}
+
+.registration-page .registration-button:hover {
+    background: #d58001;
+}
+
+.registration-page .login-now {
+  color: #4ba637d5;
+  text-align: center;
+  font-weight: 500;
+  margin: 1.75rem 0 0.31rem;
+}
+
+.registration-page .login-now a {
+  color: #f39200;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.registration-page .login-now a:hover {
+  text-decoration: underline;
+}

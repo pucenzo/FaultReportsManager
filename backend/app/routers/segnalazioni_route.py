@@ -10,6 +10,11 @@ from app.dependencies import get_db, get_current_user
 
 router = APIRouter()
 
+"""
+Endpoint per la creazione di una nuova segnalazione. 
+Utilizza lo schema SegnalazioneCreate per la validazione dei dati in input.
+Utilizza lo schema SegnalazioneDetail per la validazione dei dati in output.
+"""
 @router.post("/", response_model=SegnalazioneDetail)
 async def crea_nuova_segnalazione(
     segnalazione_in: SegnalazioneCreate,
@@ -34,6 +39,11 @@ async def crea_nuova_segnalazione(
 
     return nuova_segnalazione
 
+"""
+Endpoint per la lettura delle segnalazioni.
+Se l'utente è il cliente, legge solo le proprie, se è operatore le legge tutte. 
+Utilizza lo schema SegnalazioneMinimal per la validazione dei dati in output.
+"""
 @router.get("/", response_model=list[SegnalazioneMinimal])
 async def leggi_segnalazioni(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -46,8 +56,14 @@ async def leggi_segnalazioni(
 
     if isinstance(current_user, Operatore):
         return await get_segnalazioni(db=db, id_stato = id_stato, priorita = priorita)
-    
-@router.get("/{segnalazione_id}", response_model=SegnalazioneDetail)
+
+"""
+Endpoint per la lettura di una particolare segnalazione. 
+Utilizza lo schema SegnalazioneDetail per la validazione dei dati in output.
+Utilizzato per realizzazione riga tabella segnalazione della dashboard.
+
+"""
+@router.get("/{id_segnalazione}", response_model=SegnalazioneDetail)
 async def leggi_segnalazione(
     db: Annotated[AsyncSession, Depends(get_db)],
     id_segnalazione: int,
@@ -70,7 +86,12 @@ async def leggi_segnalazione(
             )
         
     return segnalazione
-    
+
+"""
+Endpoint per l'aggiornamento dello stato di una segnalazione. 
+Verifica se l'utente è un operatore, altrimenti impedisce l'azione. 
+Utilizza lo schema SegnalazioneUpdateStato per la validazione dei dati in input e output.
+"""
 @router.put("/{id_segnalazione}/aggiorna_stato", response_model=SegnalazioneUpdateStato)
 async def aggiorna_stato_segnalazione(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -93,6 +114,11 @@ async def aggiorna_stato_segnalazione(
         operatore = operatore
     )
 
+"""
+Endpoint per l'aggiornamento della priorita di una segnalazione. 
+Verifica se l'utente è un operatore, altrimenti impedisce l'azione. 
+Utilizza lo schema SegnalazioneUpdatePriorita per la validazione dei dati in input e output.
+"""
 @router.put("/{id_segnalazione}/aggiorna_priorita", response_model=SegnalazioneUpdatePriorita)
 async def aggiorna_priorita_segnalazione(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -116,6 +142,12 @@ async def aggiorna_priorita_segnalazione(
         operatore = operatore
     )
 
+"""
+Endpoint per la pubblicazione di un messaggio.
+Utilizzato per l'invio automatico del primo messaggio del cliente contenente la descrizione della segnalazione.
+Utilizza lo schema MessaggioCreate per la validazione dei dati in input.
+Utilizza lo schema MessaggioResponse per la validazione dei dati in output.
+"""
 @router.post("/{id_segnalazione}/messaggi", response_model=MessaggioResponse)
 async def scrivi_nuovo_messaggio(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -126,6 +158,7 @@ async def scrivi_nuovo_messaggio(
 ):
     
     segnalazione = await get_segnalazione_by_id(db=db, id_segnalazione=id_segnalazione)
+    
     if not segnalazione: 
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
@@ -144,7 +177,7 @@ async def scrivi_nuovo_messaggio(
     if isinstance(current_user, Cliente):
         ruolo = "Cliente"
     elif isinstance(current_user, Operatore):
-        ruolo = "Operatore"
+        ruolo = "operatore"
 
     nuovo_messaggio = await create_messaggio(
         db=db, 
@@ -156,6 +189,10 @@ async def scrivi_nuovo_messaggio(
 
     return nuovo_messaggio
 
+"""
+Endpoint per la lettura del log di una segnalazione.
+Utilizza lo schema LogStatoSegnalazioneResponse per la validazione dei dati in output.
+"""
 @router.get("/{id_segnalazione}/log_segnalazione", response_model=LogStatoSegnalazioneResponse)
 async def leggi_log_segnalazione(
     db: Annotated[AsyncSession, Depends(get_db)],

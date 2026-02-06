@@ -1,12 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from typing import Optional
 
-from app.schemas import LogStatoSegnalazioneResponse, SegnalazioneCreate, SegnalazioneUpdatePriorita, SegnalazioneUpdateStato
+from app.schemas import SegnalazioneCreate, SegnalazioneUpdatePriorita, SegnalazioneUpdateStato
 from app.models import Segnalazione, StatoSegnalazione, LogStatoSegnalazione, Messaggio
 from app.models import Priorita
 
+"""
+Crea la segnalazione. 
+Utilizza lo schema SegnalazioneCreate per la validazione dei dati in input.
+Genera il primo messaggio della chat
+"""
 async def create_segnalazione(
     db: AsyncSession,
     segnalazione_in: SegnalazioneCreate,
@@ -50,6 +55,10 @@ async def create_segnalazione(
     segnalazione_completa = result.scalar_one()
     return segnalazione_completa
 
+"""
+Recupera la lista delle segnalazioni.
+Verifica la presenza di filtri per stato o priorità
+"""
 async def get_segnalazioni(
     db: AsyncSession, 
     priorita: Optional[Priorita] = None,
@@ -72,6 +81,10 @@ async def get_segnalazioni(
     result = await db.execute(query)
     return result.scalars().all()
 
+"""
+Recupera le segnalazioni dell'utente.
+Verifica la presenza dei filtri per stato o priorità
+"""
 async def get_segnalazione_by_cliente(
     db: AsyncSession,
     id_stato: int,
@@ -95,7 +108,11 @@ async def get_segnalazione_by_cliente(
     
     result = await db.execute(query)
     return result.scalars().all()
-    
+
+"""
+Recupera una determinata segnalazione tramite id. 
+Utilizzata per leggerne i dettagli e la chat con l'operatore
+"""    
 async def get_segnalazione_by_id(
     db: AsyncSession,
     id_segnalazione: int
@@ -112,6 +129,11 @@ async def get_segnalazione_by_id(
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
+"""
+Consente all'operatore di aggiornare lo stato di una segnalazione.
+Gestisce la generazione del log di cambio stato (se lo stato è diverso da quello prec.).
+Gestisce la generazione del messaggio di cambio stato.
+"""
 async def update_stato_segnalazione(
     db: AsyncSession,
     id_segnalazione: int,
@@ -159,7 +181,7 @@ async def update_stato_segnalazione(
             id_segnalazione = id_segnalazione,
             contenuto = f"Lo stato è stato aggiornato da {vecchio_stato} a {nome_nuovo_stato}",
             autore = operatore,
-            ruolo = "Operatore"
+            ruolo = "operatore"
         )
 
         db.add(messaggio_aggiornamento)
@@ -170,6 +192,10 @@ async def update_stato_segnalazione(
     await db.refresh(segnalazione_da_aggiornare)
     return segnalazione_da_aggiornare
 
+"""
+Consente all'operatore di aggiornare la priorità di una segnalazione.
+Gestisce la generazione del messaggio di cambio priorità (se la nuova è diversa da quella prec.).
+"""
 async def update_priorita_segnalazione(
     db: AsyncSession, 
     id_segnalazione: int,
@@ -197,9 +223,9 @@ async def update_priorita_segnalazione(
     if vecchia_priorita != nuova_priorita.priorita:
         messaggio_aggiornamento = Messaggio(
             id_segnalazione = id_segnalazione,
-            contenuto = f"La priorità è stata aggiornata da {vecchia_priorita} a {nuova_priorita}",
+            contenuto = f"La priorità è stata aggiornata da {vecchia_priorita.value} a {nuova_priorita.priorita.value}",
             autore = operatore,
-            ruolo = "Operatore"
+            ruolo = "operatore"
         )
 
         db.add(messaggio_aggiornamento)
@@ -210,6 +236,11 @@ async def update_priorita_segnalazione(
     await db.refresh(segnalazione_da_aggiornare)
     return segnalazione_da_aggiornare
 
+"""
+Crea un nuovo messaggio.
+Se è il primo messaggio dell'operatore in risposta ad una segnalazione, 
+aggiorna l'operatore che l'ha presa in carico
+"""
 async def create_messaggio(
     db: AsyncSession, 
     id_segnalazione: int,
@@ -225,10 +256,20 @@ async def create_messaggio(
         id_segnalazione = id_segnalazione
     )
 
+    if ruolo == "operatore":
+        query = (update(Segnalazione)
+                .where(Segnalazione.id == id_segnalazione)
+                .where(Segnalazione.operatore.is_(None))
+                .values(operatore=autore)
+        )
+        await db.execute(query)
+
     db.add(nuovo_messaggio)
     await db.commit()
     await db.refresh(nuovo_messaggio)
     return nuovo_messaggio
+
+"""recupera il log della segnalazione"""
 
 async def get_logs_by_segnalazione(
     db: AsyncSession,

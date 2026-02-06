@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional
 from app.models import Priorita
 from datetime import datetime
@@ -67,7 +67,7 @@ class MessaggioResponse(MessaggioBase):
 #===========================================================================
 
 class SegnalazioneBase(BaseModel):
-    titolo: str
+    titolo: str = Field(..., min_length=2)
 
 class SegnalazioneCreate(SegnalazioneBase):
     descrizione: str
@@ -78,10 +78,11 @@ class SegnalazioneMinimal(SegnalazioneBase):
     data_apertura: datetime
     stato: StatoSegnalazioneResponse
     cliente: ClienteResponse
+    operatore: Optional[str]=None
     model_config=ConfigDict(from_attributes=True)
 
 class SegnalazioneDetail(SegnalazioneMinimal):
-    descrizione: str
+    descrizione: str = Field(..., min_length=2)
     messaggi: list[MessaggioResponse] = []
 
 class SegnalazioneUpdatePriorita(BaseModel):
@@ -115,3 +116,16 @@ class TokenData(BaseModel):
     sub: Optional[str] = None 
     role: Optional[str] = None
     id: Optional[int] = None
+
+
+#===========================================================================
+#                            SCHEMA USER GENERICO
+#===========================================================================
+
+class User(BaseModel):
+    id: int
+    nome: str
+    cognome: str
+    email: EmailStr
+    ruolo: str
+    model_config=ConfigDict(from_attributes=True)
