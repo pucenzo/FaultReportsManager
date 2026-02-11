@@ -1,6 +1,7 @@
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 
 from app.core.db import SessionLocal
@@ -35,13 +36,18 @@ async def get_current_user(
         detail="Credenziali non valide",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    try:
+        payload = decode_access_token(token=token)
 
-    payload = decode_access_token(token=token)
-        
-    email = payload.sub
-    role = payload.role
+        if payload is None:
+            raise exception_message
+            
+        email = payload.sub
+        role = payload.role
 
-    if email is None or role is None:
+        if email is None or role is None:
+            raise exception_message
+    except JWTError:
         raise exception_message
     
     if role == "cliente":

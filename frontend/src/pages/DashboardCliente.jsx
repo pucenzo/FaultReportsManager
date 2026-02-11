@@ -1,9 +1,10 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, use, useContext} from 'react';
 import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import '../css/Dashboard.css';
 import Button from '../components/Button';
 import InputField from '../components/InputField';
+import {AuthContext} from '../context/AuthContext';
 
 export function DashboardCliente() {
 
@@ -18,6 +19,7 @@ export function DashboardCliente() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const nomiStati = {"1": "Aperta","2": "In Lav.", "3": "Risolta","4": "Chiusa"};
   const navigate = useNavigate();
+  const {logout} = useContext(AuthContext);
 
   /*Gestisce la vista principale del cliente,
     dal caricamento dei dati, alla creazione della segnalazione,
@@ -56,20 +58,25 @@ export function DashboardCliente() {
     }
 
     try{
-      await axios.post("http://localhost:8000/segnalazioni", dati);
+      await axios.post("http://localhost:8000/segnalazioni/", dati);
       fetchSegnalazioniCliente();
       
       setTitolo(''); 
       setDescrizione('');
       setShowForm(false);
     } catch (apiError) { 
-
-      if (error.response && error.response.status === 401) {
-            logout(); 
-            return;
+      if (apiError.response && apiError.response.status === 401) {
+        setError("Sessione scaduta. Effettua nuovamente il login.");
+        logout(); 
+        return;
       } 
       if (apiError.response && apiError.response.data) { 
-        setFormError(apiError.response.data.detail); 
+        const errorDetail = apiError.response.data.detail; 
+        if (Array.isArray(errorDetail)) {
+            setFormError(errorDetail[0].msg); 
+        } else {
+            setFormError(errorDetail); 
+        }
       } else {
         setFormError("Errore nella creazione della segnalazione."); 
       }
@@ -88,12 +95,9 @@ export function DashboardCliente() {
     setActiveDropdown(null); 
   };
 
-
   return (
     <div className="dashboard-container cliente-css">    
     
-      {error && <div className="messaggio-errore">{error}</div>}
-
         <div className="table-container">
           
           <div className="header-tabella">
@@ -201,8 +205,6 @@ export function DashboardCliente() {
           {showForm && (
             <div className="form-creazione-container">
               <h2 style={{marginTop: 0}}>Compila i campi della segnalazione</h2>          
-              {formError && <div className="error-msg">{formError}</div>}
-
               <form className = "form-crea-segnalazione" onSubmit={handleCreaSegnalazione}>
                 <div>              
                   <InputField 
@@ -224,6 +226,7 @@ export function DashboardCliente() {
                     value={descrizione}
                     onChange={(e) => setDescrizione(e.target.value)}
                   />
+                  {formError && <div className="error-msg" style={{color: "red"}}>{formError}</div>}                                
                 </div>
 
                 <div className="form-button">
@@ -231,7 +234,12 @@ export function DashboardCliente() {
                   <Button 
                     type="button" 
                     className="annulla-segnalazione"
-                    onClick={() => { setShowForm(false); setFormError(""); }}
+                    onClick={() => { 
+                      setShowForm(false); 
+                      setFormError(""); 
+                      setTitolo('');
+                      setDescrizione('');
+                    }}
                   >
                     Annulla
                   </Button>
@@ -240,6 +248,7 @@ export function DashboardCliente() {
             </div>
       )}
         </div>
+        {error && <div className="messaggio-errore" style={{color: "red"}}>{error}</div>}
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useContext} from 'react';
 import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import '../css/Dashboard.css';
+import { AuthContext } from '../context/AuthContext';
 
 export function DashboardOperatore() {
 
@@ -12,6 +13,7 @@ export function DashboardOperatore() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const nomiStati = {"1": "Aperta","2": "In Lav.", "3": "Risolta","4": "Chiusa"};
   const navigate = useNavigate();
+  const {logout} = useContext(AuthContext);
 
   /*Gestisce la vista principale dell'operatore,
     dal caricamento dei dati, ai filtri fino alla visualizzazione*/

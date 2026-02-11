@@ -9,25 +9,27 @@ import '../css/DettaglioSegnalazione.css';
 export default function DettaglioSegnalazione() {
   
   const {id} = useParams();
-  const {user} = useContext(AuthContext);   
+  const {user, logout} = useContext(AuthContext);   
   const navigate = useNavigate();
   const [segnalazioneDettagli, setSegnalazioneDettagli] = useState(null);
   const [nuovoMessaggio, setNuovoMessaggio] = useState("");
-  const [error, setError] = useState("");
+  const [pageError, setPageError] = useState("");
+  const [msgError, setMsgError] = useState("");
   const isOperatore = user?.ruolo === "operatore" 
+  
 
   /*Carica i dettagli della segnalazione*/
   const fetchDettagli = async () => {
     try {
       const response = await axios.get(`http://localhost:8000/segnalazioni/${id}`);
       setSegnalazioneDettagli(response.data);
-    } catch (err) {
-      if (error.response && error.response.status === 401) {
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 401) {
             logout(); 
             return;
         } 
-      console.error(err);
-      setError("Errore nel caricamento della segnalazione.");
+      console.error(apiError);
+      setPageError("Errore nel caricamento della segnalazione.");
     } 
   };
 
@@ -41,17 +43,27 @@ export default function DettaglioSegnalazione() {
   /*gestisce l'invio del messaggio ricaricando la pagina dei dettagli all'invio*/
   const handleInviaMessaggio = async (e) => {
     e.preventDefault();
+    setMsgError("");
 
     try {
       await axios.post(`http://localhost:8000/segnalazioni/${id}/messaggi`,{ contenuto: nuovoMessaggio });
       setNuovoMessaggio("");
       await fetchDettagli(); 
-    } catch (err) {
-      if (error.response && error.response.status === 401) {
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 401) {
             logout();
             return;
-        } 
-      alert("Errore nell'invio del messaggio");
+      }
+      if (apiError.response && apiError.response.data) { 
+        const errorDetail = apiError.response.data.detail; 
+        if (Array.isArray(errorDetail)) {
+          setMsgError(errorDetail[0].msg); 
+        } else {
+          setMsgError(errorDetail); 
+        }
+      } else { 
+        setMsgError("Errore nell'invio del messaggio");
+      }
     }
   };
 
@@ -60,7 +72,11 @@ export default function DettaglioSegnalazione() {
     try {
       await axios.put(`http://localhost:8000/segnalazioni/${id}/aggiorna_stato`,{id_stato: parseInt(nuovoIdStato)});
       fetchDettagli(); 
-    } catch (err) {
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 401) {
+            logout();
+            return;
+      } 
       alert("Errore aggiornamento stato.");
     }
   };
@@ -70,12 +86,16 @@ export default function DettaglioSegnalazione() {
     try {
       await axios.put(`http://localhost:8000/segnalazioni/${id}/aggiorna_priorita`,{priorita: nuovaPriorita});
       fetchDettagli();
-    } catch (err) {
+    } catch (apiError) {
+      if (apiError.response && apiError.response.status === 401) {
+            logout();
+            return;
+      } 
       alert("Errore aggiornamento priorità.");
     }
   };
 
-  if (error) return <div className="error-msg">{error}</div>;
+  if (pageError) return <div className="error-msg" style={{color:"red"}}>{pageError}</div>;
   if (!segnalazioneDettagli) return <div className="error-msg">Segnalazione non trovata.</div>;
 
   /*formatta la data per mostrarla in formato gg-mm-aaaa*/
@@ -136,13 +156,14 @@ export default function DettaglioSegnalazione() {
         <div className="input-messaggio">
           <form onSubmit={handleInviaMessaggio}>
             <textarea 
-              placeholder="Scrivi una risposta"
+              placeholder="Scrivi un messaggio..."
               className = "box-messaggio"
               required = {true} 
               value={nuovoMessaggio}
               onChange={(e) => setNuovoMessaggio(e.target.value)}
               rows="3"
             />
+            {msgError && <div className="error-msg" style={{color: "red"}}>{msgError}</div>}                                
             <div className="bottone-invio">
                 <Button type="submit">Invia Messaggio</Button>
             </div>
