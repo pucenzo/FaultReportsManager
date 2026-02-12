@@ -1,8 +1,15 @@
 # FaultReportsManager
 
-# Piattaforma di Segnalazioni
+## Piattaforma di Segnalazioni
 
-## Prerequisiti
+### Stack ed implementazione
+
+La soluzione è stata implementata adottando lo stack:
+ • fastAPI, con validazione dei dati tramite Pydantic, SQLAlchemy come ORM e SQLite come database in locale;
+ • React, con gestione delle chiamate API tramite axios;
+All'interno della repository è presente anche uno script SQL con la traduzione delle classi e delle query SQLAlchemy in istruzioni SQL standard.
+
+### Prerequisiti
 
 Assicurarsi di avere installato sul proprio computer:
 
@@ -11,11 +18,11 @@ Assicurarsi di avere installato sul proprio computer:
 
 ---
 
-## Installazione e Avvio
+### Installazione e Avvio
 
 Il progetto è diviso in due cartelle principali. Aprire due terminali diversi per eseguirli contemporaneamente.
 
-### 1️⃣ Configurazione del Backend (Python)
+#### 1️⃣ Configurazione del Backend (Python)
 
 Aprire il terminale nella cartella "backend":
 
@@ -33,12 +40,17 @@ Aprire il terminale nella cartella "backend":
     pip install -r requirements.txt
     ```
 
-4.  **Inizializzare il Database**:
+4. **Posizionarsi nella directory `backend`**:
+    ```
+    cd backend
+    ```
+
+5.  **Inizializzare il Database**:
     ```
     python -m app.init_db
     ```
 
-5.  **Avviare il Server**:
+6.  **Avviare il Server**:
     ```
     uvicorn main:app --reload
     ```
@@ -46,7 +58,22 @@ Aprire il terminale nella cartella "backend":
 
 ---
 
-### 2️⃣ Configurazione del Frontend (React)
+#### 2️⃣ Creazione utente Operatore
+
+Mentre per i clienti la registrazione è autonoma mediante form, per gli operatori, essendo figure interne all'azienda, ho pensato di simulare il loro "accreditamento" tramite inserimento diretto nel database. Quindi non è prevista una pagina di registrazione pubblica per lo staff.
+
+Per creare un nuovo operatore sarà necessario:
+
+1. Aprire il terminale nella cartella `backend`;
+2. Eseguire il modulo Python dedicato:
+    ```
+    python -m app.crea_operatore
+    ```
+3. Inserire i dati richiesti;
+
+Una volta creato l'account, l'operatore potrà effettuare l'accesso dalla pagina di [login](http://localhost:5173/login).
+
+#### 3️⃣ Configurazione del Frontend (React)
 
 Aprire un nuovo terminale e andare nella cartella "frontend"":
 
@@ -63,23 +90,21 @@ Aprire un nuovo terminale e andare nella cartella "frontend"":
 
 ---
 
-## 🧪 Come testare l'App
+#### 4️⃣ Come testare l'App
 
-1.  Andrea alla pagina di registrazione all'indirizzo (`http://localhost:5173/registrazione`).
-2.  Creare un nuovo utente cliente.
-3.  Fare il login.
-4.  Creare una nuova segnalazione dalla dashboard.
-
-**Per testare l'utente operatore, accreditare manualmente l'utente (consiglio tramite DB Browser for SQLite)**. Dopodichè, fare il login all'indirizzo (`http://localhost:5173/registrazione`). 
-
-**IMPORTANTE! Per generare una password hashate è necessario eseguire da terminale il seguente comando**:
-```
-python -c "from passlib.context import CryptContext; ctx = CryptContext(schemes=['bcrypt'], deprecated='auto'); print(ctx.hash('admin123'))"    
-```
+1.  Andare alla pagina di registrazione all'indirizzo: (`http://localhost:5173/registrazione`);
+2.  Creare un nuovo utente Cliente;
+3.  Eseguire il login;
+4.  Creare una nuova segnalazione dalla dashboard;
+5.  Eseguire il logout;
+6.  Eseguire il login come Operatore;
+7.  Visualizzare nel dettaglio una segnalazione e testare le funzionalità (messaggio, cambio stato e priorita);
+8.  Effettuare il logout e di nuovo il login come Cliente;
+9.  Visualizzare nel dettaglio la segnalazione e tutte le modifiche/risposte apportate dall'Operatore;
 
 ---
 
-## 📚 Swagger UI - fastAPI
+#### Swagger UI - fastAPI
 
 FastAPI genera automaticamente la documentazione, visualizzabile all'indirizzo `http://localhost:8000/docs`. 
 
